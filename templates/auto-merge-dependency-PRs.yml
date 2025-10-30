@@ -1,0 +1,48 @@
+name: Auto Merge Scheduled Dependency Updates PRs (Reusable)
+
+description: >
+  Reusable workflow for auto-merging dependency update PRs. Expects SCHEDULED_UPDATES_TOKEN to be available via secrets.
+
+on:
+  workflow_call:
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Merge PR if it's the dependency update branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.SCHEDULED_UPDATES_TOKEN }}
+        run: |
+          PR_NUMBER=$(gh pr list --head automated-dependencies-update --json number --jq '.[0].number')
+          if [ -n "$PR_NUMBER" ]; then
+            echo "Found PR #$PR_NUMBER - waiting for PR checks to register..."
+
+            COMMIT_SHA=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits[-1].oid')
+            echo "Head commit SHA: $COMMIT_SHA"
+
+            CHECKS_FOUND=false
+            for i in {1..18}; do
+              CHECK_RUN_COUNT=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs | jq '.total_count' 2>/dev/null || echo 0)
+              if [ "$CHECK_RUN_COUNT" -gt 0 ]; then
+                echo "Detected $CHECK_RUN_COUNT check run(s) on commit $COMMIT_SHA"
+                echo "Enabling auto-merge for PR #$PR_NUMBER - will merge once required checks pass"
+                gh pr merge $PR_NUMBER --auto --squash
+                CHECKS_FOUND=true
+                break
+              fi
+              echo "Waiting for check runs to appear... (attempt $i/18, found $CHECK_RUN_COUNT)"
+              sleep 10
+            done
+
+            if [ "$CHECKS_FOUND" = "false" ]; then
+              echo "❌ Timeout: no check runs detected within 3 minutes. Not enabling auto-merge."
+              echo "Manual intervention required for PR #$PR_NUMBER"
+              exit 1
+            fi
+          else
+            echo "No dependency PR to merge"
+          fi
