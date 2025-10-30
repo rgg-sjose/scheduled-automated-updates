@@ -9,6 +9,16 @@ on:
       update_command:
         required: true
         type: string
+      python_version_file:
+        required: false
+        type: string
+        default: "pyproject.toml"
+        description: "File containing the Python version to use. Leave empty to disable."
+      cache:
+        required: false
+        type: string
+        default: "pip"
+        description: "Package manager for caching (pip, pipenv, poetry). Leave empty to disable caching."
 
 jobs:
   update-dependencies:
@@ -20,8 +30,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: "pyproject.toml"
-          cache: "pip"
+          python-version-file: ${{ inputs.python_version_file != '' && inputs.python_version_file || null }}
+          cache: ${{ inputs.cache != '' && inputs.cache || null }}
 
       - name: Run auto dependency update
         uses: romoh/dependencies-autoupdate@v1.1
