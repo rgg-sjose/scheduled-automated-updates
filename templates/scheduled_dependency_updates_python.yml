@@ -1,0 +1,31 @@
+name: Scheduled Dependency Updates Template
+
+description: >
+  Reusable workflow for scheduled dependency updates. Expects SCHEDULED_UPDATES_TOKEN to be available via secrets.
+
+on:
+  workflow_call:
+    inputs:
+      update_command:
+        required: true
+        type: string
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+          cache: "pip"
+
+      - name: Run auto dependency update
+        uses: romoh/dependencies-autoupdate@v1.1
+        with:
+          token: ${{ secrets.SCHEDULED_UPDATES_TOKEN }}
+          update-command: ${{ inputs.update_command }}
+=
