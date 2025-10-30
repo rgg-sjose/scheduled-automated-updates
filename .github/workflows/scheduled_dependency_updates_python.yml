@@ -30,8 +30,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: ${{ inputs.python_version_file != '' && inputs.python_version_file || null }}
-          cache: ${{ inputs.cache != '' && inputs.cache || null }}
+          python-version-file: ${{ inputs.python_version_file }}
+          cache: ${{ inputs.cache }}
 
       - name: Run auto dependency update
         uses: romoh/dependencies-autoupdate@v1.1
