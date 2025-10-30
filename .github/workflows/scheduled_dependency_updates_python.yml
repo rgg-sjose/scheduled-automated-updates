@@ -28,4 +28,3 @@ jobs:
         with:
           token: ${{ secrets.SCHEDULED_UPDATES_TOKEN }}
           update-command: ${{ inputs.update_command }}
-=
